@@ -11,9 +11,23 @@
 # NTL creates these when you install it according to NTL instructions.
 # See http://www.shoup.net/ntl for more.
 
-CXXFLAGS = -Wno-deprecated
+NTL_DIR=./ntl
+NTL_SRC=$(NTL_DIR)/src
+NTL_LIB=$(NTL_DIR)/lib
+NTL_INC=$(NTL_DIR)/include
 
-all: sketch differ
+
+CXXFLAGS = -Wno-deprecated -I $(NTL_INC) -L $(NTL_LIB)
+
+ifeq ($(debug),on)
+	CXXFLAGS += -g -dH -rdynamic
+else
+	CXXFLAGS += -DNDEBUG -O3
+endif
+
+.PHONY: ntl
+
+all: ntl sketch differ
 
 bch.o: bch.cpp pinsketch.h
 	g++ $(CXXFLAGS) -c bch.cpp 
@@ -35,3 +49,11 @@ differ: differ.o bch.o io.o pinsketch.h
 
 clean:
 	rm differ sketch bch.o io.o sketch.o differ.o
+	$(MAKE) -C $(NTL_SRC) clobber
+
+ntl:
+	cd $(NTL_SRC) && ./configure
+	$(MAKE) -C $(NTL_SRC) WIZARD=off
+	mkdir -p -m 755 $(NTL_LIB)
+	cp -p $(NTL_SRC)/ntl.a $(NTL_LIB)/libntl.a #LSTAT
+	chmod a+r $(NTL_LIB)/libntl.a #LSTAT
